@@ -65,3 +65,25 @@ Private JSON endpoints behind the Seller Central UI. All are same-origin `fetch`
   DOM `.click()` works in a background tab; coordinate clicks on the popover did not.
 - Download links on `/reports/history/<subscriptionId>?entityId=...` (`a[href*=download-report]`) redirect cross-origin to S3,
   so `fetch` fails on CORS. Use `Browser.setDownloadBehavior` with a `downloadPath` and click a created `<a>`.
+
+## More traps (added)
+- **Ads console daily reports only look back 90 days.** `PUT /reports/api/subscriptions/custom` returns
+  `Report start date ... is beyond the maximum look back days: 90`. Older daily ad data is not available; use
+  Business Report sessions as the traffic control instead.
+- The Ads console CSRF token for `/reports/api/*` is in `document.getElementsByName("csrf-token")[0].value`
+  (sent as `anti-csrftoken-a2z`). With it you can PUT `/reports/api/subscriptions/custom?entityId=...` directly
+  (reportPeriod "CUSTOM", reportStartDate/EndDate as UTC-midnight epoch ms, reportMetadata.timeUnitId "day").
+  Driving the date picker by DOM clicks is unreliable (selection often silently resets to "Last 30 days").
+- **Brand Tailored Promotions** live at `/brand-tailored-promotions/dashboard` (not in Promotion Central, and their
+  discounts show up in the FBA Promotions report as e.g. "Brand cart abandoners (90 days)").
+- **S&S Manage products** (`/sns/manage`) shows active subscriptions, most common frequency and projected
+  subscriber units (15/30/60/90 days) per offer. The table is rendered from page state (no XHR); set the
+  results-per-page `kat-dropdown` to 50 and read `document.body.innerText`.
+- **S&S Dashboard** (`/sns/dashboard`) is an embedded QuickSight dashboard (weekly active subscriptions, reorder
+  rate, subscriber LTV by segment, retention). Values are only exposed on hover inside a cross-origin iframe;
+  there is no text or JSON to scrape from the parent page.
+- Seller Central account selection can be set by visiting
+  `/home?mons_sel_dir_mcid=<dir mcid>&mons_sel_mkid=<mp id>&mons_sel_dir_paid=<paid>` (values from a previous
+  switch URL). It is global to the browser profile, so it changes every Seller Central tab.
+- When running long jobs through a browser extension with a per-call timeout, start them as a background promise on
+  `window` and poll; download large files by building a Blob and clicking an `<a download>`.
