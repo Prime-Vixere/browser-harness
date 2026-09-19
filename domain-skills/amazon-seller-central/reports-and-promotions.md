@@ -87,3 +87,18 @@ Private JSON endpoints behind the Seller Central UI. All are same-origin `fetch`
   switch URL). It is global to the browser profile, so it changes every Seller Central tab.
 - When running long jobs through a browser extension with a per-call timeout, start them as a background promise on
   `window` and poll; download large files by building a Blob and clicking an `<a download>`.
+
+## Brand Analytics private API (sellercentral.amazon.com)
+
+- Every Brand Analytics dashboard calls `POST /api/brand-analytics/v1/dashboard/{dashboardId}/reports` with a JSON body. Call it with a same-origin `fetch` from any Seller Central tab; the session cookie is enough and no CSRF header is needed.
+- Dashboard ids: `brand-catalog-performance` (Search Catalog Performance), `query-performance` (Search Query Performance), `customer-loyalty`, `repeat-purchase-behavior`, `customer-journey`.
+- To get the exact body shape (view id, report ids, filter names), open the dashboard once and capture the request. The brand filter value is the numeric brand id, not the brand name.
+- Paging trap: changing a top-level page param returns the same first page again. Page tables with `reportOperations: [{reportId, reportType: "TABLE", pageNumber, pageSize}]` in the body (pageSize 100 works).
+- Weeks end on Saturday. Weekly history covers about two years, so one call per week is fine.
+- Capturing requests: when the daemon is shared with other sessions, `Network` events can be drained by another client. The reliable way is to inject a fetch/XHR patch with `Page.addScriptToEvaluateOnNewDocument` (after `Page.enable`) that stores request bodies on `window`. Then reload and read them back with `js(...)`. A backgrounded tab may not fire its data calls until you emulate focus (`Emulation.setFocusEmulationEnabled`).
+
+## Amazon Ads: daily totals past the report lookback
+
+- Report-builder daily reports stop at about 90 days back. The Campaign Manager overview calls `POST https://advertising.amazon.com/a9g-api-gateway/campaign-manager/retrieveReport` with `reportId: "UnifiedCampaignReportSyncAPI"`.
+- Its response carries `timeUnitsData.DAILY` account-level arrays (`startDates`, `spendCoV`, `impressions`, `clicks`, `orders`, `salesCoV`) for whatever date range the body asks for. This gives daily totals back to the start of the account.
+- Replaying the call needs the headers from a captured request: `Amazon-Advertising-API-CSRF-Token`, `-CSRF-Data`, `-ClientId`, `-AdvertiserId`, `-MarketplaceId` and `Amazon-Ads-Account-ID`. Capture them with the injected-script method above, then replay with `fetch` from the same tab. Do not commit those values anywhere.
