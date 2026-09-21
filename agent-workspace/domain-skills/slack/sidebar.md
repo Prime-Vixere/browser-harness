@@ -16,9 +16,14 @@ Opening a channel clears its unread marker. A passive watcher must read state fr
 ## Do this first
 
 ```python
+# Session first: a signed-out page has no Home button either, so check it before the view.
+url = js("location.href")
+if "/workspace-signin" in url or "slack.com/signin" in url:
+    raise RuntimeError("logged_out")
+
 home = js('!!document.querySelector(\'[data-qa="tab_rail_home_button"][aria-selected="true"]\')')
 if not home:
-    raise RuntimeError("Slack is not in the Home view: the channel sidebar is not rendered")
+    raise RuntimeError("Slack is signed in but not in the Home view: the channel sidebar is not rendered")
 
 rows = js("""(() => {
   const P = 'data-qa-channel-sidebar-';
@@ -89,6 +94,6 @@ Use one tab per workspace, identified by the `<TEAM_ID>` in its URL.
 ## Traps
 
 - Clicking a row to inspect it clears the unread marker you were trying to observe.
-- Zero sidebar rows usually means the tab is not in the Home view. Check the view before concluding anything.
+- Zero sidebar rows means either a signed-out page or a view other than Home. Check the session first, then the view, before concluding anything.
 - The sidebar is virtualized, so a row that is not rendered is simply missing from the snapshot.
 - The unread class and mention badge selectors above are unverified; do not treat their absence as proof of "nothing unread" until confirmed.
