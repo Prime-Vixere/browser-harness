@@ -49,7 +49,9 @@ The list has **no per-message ids**, only thread ids. To detect a new message in
 thread_id + hash(timestamp title, snippet)
 ```
 
-That pair changes exactly when a new message lands in the thread, because the row's timestamp and snippet always reflect the latest message. Thread id alone misses replies; unread state alone misses threads the user already read elsewhere.
+This is **best-effort** detection. The row's timestamp and snippet reflect the latest message, so the key normally changes when a new message lands in the thread. Thread id alone misses replies; unread state alone misses threads the user already read elsewhere.
+
+Known false negative: if a new message arrives with the same timestamp `title` (at whatever granularity the title shows) **and** the same snippet as the previous one, the key is identical and the new message is missed. Identical short replies sent back to back are the realistic case. The list view has nothing finer to key on, so a watcher that cannot tolerate this needs a different source than the list.
 
 ## Account detection
 

@@ -93,14 +93,24 @@ What does not work:
 
 So to work inside a specific profile:
 
-1. Attach to a tab the user **already has open** in that profile: `Target.attachToTarget` with `flatten=True`, then drive it by explicit session id.
+1. Attach to a tab the user **already has open** in that profile. There are two ways, and they behave differently:
+   - `switch_tab(tab["targetId"])` attaches **and** makes that tab the daemon's active session, so every helper (`page_info()`, `js()`, `click_at_xy()`, `capture_screenshot()`, ...) follows it. It also prefixes the tab's title with the harness marker, so match titles with `in`, not `startswith`.
+   - Raw `Target.attachToTarget` with `flatten=True` returns a session id and leaves the daemon's active tab alone. Helpers take **no** session id and keep acting on the previously attached tab, so after a raw attach only `cdp(method, session_id=sid, ...)` reaches the new tab. Use this when a watcher must read a tab without taking over the active one, and never mix it with helpers expecting them to follow.
 2. Identify the right profile by page title. For example, the Gmail title contains the account address.
 3. Reuse that tab's `browserContextId` to filter the other tabs that belong to the same profile.
 
 ```python
 tab = next(t for t in pages if "<account marker>" in t["title"])
-sid = cdp("Target.attachToTarget", targetId=tab["targetId"], flatten=True)["sessionId"]
 same_profile = [t for t in pages if t.get("browserContextId") == tab.get("browserContextId")]
+
+# Option A: take over. All helpers now act on this tab.
+switch_tab(tab["targetId"])
+print(page_info())
+
+# Option B: read on the side. The active tab is untouched; helpers still point at the old tab.
+sid = cdp("Target.attachToTarget", targetId=tab["targetId"], flatten=True)["sessionId"]
+title = cdp("Runtime.evaluate", session_id=sid, expression="document.title", returnByValue=True)["result"]["value"]
+cdp("Target.detachFromTarget", sessionId=sid)
 ```
 
 ### Always-on agents: use a dedicated Chrome
