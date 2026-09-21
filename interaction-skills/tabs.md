@@ -71,3 +71,47 @@ Typical tools:
 - `chrome://omnibox-popup.top-chrome/` can appear as a fake page target; ignore it for user-facing tab lists.
 - If a page has `w=0 h=0`, you may be attached to the wrong target or a non-window surface.
 - For dynamic UIs, re-read element rects after opening dropdowns / modals before coordinate-clicking.
+
+## Multiple Chrome profiles
+
+Verified live on 2026-09-20.
+
+One Chrome process serves **all** open profiles, and `Target.getTargets` lists tabs from every one of them. Each target's `browserContextId` identifies its profile for that Chrome run. The ids change on every launch, so never persist them.
+
+```python
+targets = cdp("Target.getTargets")["targetInfos"]
+pages = [t for t in targets if t["type"] == "page"]
+by_profile = {}
+for t in pages:
+    by_profile.setdefault(t.get("browserContextId"), []).append(t)
+```
+
+What does not work:
+
+- `Target.createTarget(browserContextId=<another profile's id>)` fails with "Failed to find browser context". Regular profiles are not CDP-creatable contexts.
+- `Target.createTarget` without a context lands in whichever profile Chrome considers default. You cannot choose which one.
+
+So to work inside a specific profile:
+
+1. Attach to a tab the user **already has open** in that profile: `Target.attachToTarget` with `flatten=True`, then drive it by explicit session id.
+2. Identify the right profile by page title. For example, the Gmail title contains the account address.
+3. Reuse that tab's `browserContextId` to filter the other tabs that belong to the same profile.
+
+```python
+tab = next(t for t in pages if "<account marker>" in t["title"])
+sid = cdp("Target.attachToTarget", targetId=tab["targetId"], flatten=True)["sessionId"]
+same_profile = [t for t in pages if t.get("browserContextId") == tab.get("browserContextId")]
+```
+
+### Always-on agents: use a dedicated Chrome
+
+For an agent that runs continuously, skip profile juggling and give it its own Chrome:
+
+```bash
+"<chrome binary>" --user-data-dir=<own dir> --remote-debugging-port=<port>
+BU_NAME=<name> BU_CDP_WS=<ws from /json/version> browser-harness <<'PY'
+print(page_info())
+PY
+```
+
+A non-default `--user-data-dir` opens the debugging port with no "Allow" prompt, and it keeps the agent out of the user's everyday browser.
