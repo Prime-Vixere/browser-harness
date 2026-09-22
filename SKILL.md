@@ -26,6 +26,7 @@ The code is the doc.
 
 Available interaction skills:
 - `interaction-skills/connection.md` — startup sequence, tab visibility, omnibox popup fix
+- `interaction-skills/concurrent-agents.md` — two agents on one Chrome: own daemon (`BU_NAME`), own target, pinned `session_id`
 
 Available domain skills:
 - `tiktok/upload.md`
@@ -68,6 +69,7 @@ Profiles (cookies-only login state) live in `interaction-skills/profile-sync.md`
 After cloning the repo, search `domain-skills/` first for the domain you are working on before inventing a new approach.
 
 Only if you start struggling with a specific mechanic while navigating, look in `interaction-skills/` for helpers. The available interaction skills are:
+- `concurrent-agents.md`
 - `cookies.md`
 - `cross-origin-iframes.md`
 - `dialogs.md`
