@@ -56,12 +56,19 @@ fi
 # Chrome mints a new browser id every launch, and the daemon reads BU_CDP_WS once,
 # at birth: ensure_daemon() returns early for a live socket, so exporting a fresh
 # URL past an old daemon changes nothing. Retire a daemon still dialling a dead id.
-PID_FILE="/tmp/bu-$NAME.pid"
-if [ -f "$PID_FILE" ] && DPID=$(cat "$PID_FILE" 2>/dev/null) && kill -0 "$DPID" 2>/dev/null; then
+# The shim relocates runtime files per checkout, so look where it would put them
+# as well as the flat legacy path — a daemon missed here is a daemon left dialing
+# a dead browser id, which is the failure this whole script exists to avoid.
+DEV_ID="$(printf '%s' "$ROOT" | cksum | awk '{print $1}')"
+for RT in "${BH_RUNTIME_DIR:-/tmp/bh-dev-$DEV_ID/runtime}" /tmp; do
+  PID_FILE="$RT/bu-$NAME.pid"
+  [ -f "$PID_FILE" ] || continue
+  DPID=$(cat "$PID_FILE" 2>/dev/null) || continue
+  kill -0 "$DPID" 2>/dev/null || continue
   if ! ps -p "$DPID" -Eo command= 2>/dev/null | grep -qF "BU_CDP_WS=$WS"; then
     kill "$DPID" 2>/dev/null || true
-    rm -f "/tmp/bu-$NAME.sock" "$PID_FILE"
+    rm -f "$RT/bu-$NAME.sock" "$PID_FILE"
   fi
-fi
+done
 
 BU_NAME="$NAME" BU_CDP_WS="$WS" exec "$HARNESS" "$@"
