@@ -20,9 +20,10 @@ HARNESS="$ROOT/browser-harness"
 PORT="${BU_ISO_PORT:-9333}"
 NAME="${BU_NAME:-iso}"
 # Colon-separated allowlist of profile dirs this port is allowed to be serving.
-# The /tmp entry is transitional — macOS clears /private/tmp on boot, taking the
-# logins and the remote-debugging grant with it. Drop it once the profile moves.
-PROFILES="${BU_ISO_PROFILE:-$HOME/.chrome-harness-profile:/tmp/chrome-fbc-profile}"
+# Keep it under $HOME: macOS clears /private/tmp on boot, and this profile holds
+# both the signed-in sessions and the remote-debugging grant, which no script can
+# recreate. (Verified on the move: the grant lives inside the profile, not the path.)
+PROFILES="${BU_ISO_PROFILE:-$HOME/.chrome-harness-profile}"
 
 # A debug port is just a number, and other apps pick round ones too: Relay's
 # dedicated Chrome (relay/config.py CHROME_PORT) defaults to this very port.
