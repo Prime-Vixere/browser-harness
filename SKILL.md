@@ -24,7 +24,7 @@ PY
 ```
 
 - Invoke as `browser-harness`. Use heredocs for multi-line commands.
-- **When several sessions share one Chrome, use `harness-iso`** (same usage, `iso` in the repo root). It
+- **When several sessions share one Chrome, use `harness-iso`** (same usage, `harness-iso` in the repo root). It
   targets a second Chrome with its own profile and debug port. A dozen concurrent daemons on one port make
   CDP handshakes time out for minutes at a time, and `BU_NAME` does not help. See
   `interaction-skills/isolated-instance.md`. Use bare `browser-harness` when the task needs a login that

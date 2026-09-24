@@ -12,6 +12,9 @@ print(list_tabs())
 PY
 ```
 
+The script is `harness-iso` in the repo root. Put it on your `PATH` once, e.g.
+`ln -s "$PWD/harness-iso" ~/.local/bin/harness-iso`.
+
 `harness-iso` resolves the websocket from the port and execs `browser-harness`. Everything else —
 `new_tab()`, `js()`, `screenshot()` — behaves exactly as normal.
 

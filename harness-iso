@@ -36,7 +36,7 @@ if [ -n "${PID:-}" ]; then
   IFS=: read -ra want <<< "$PROFILES"
   for w in "${want[@]}"; do [ -n "$w" ] && [ "$DIR" = "$w" ] && ok=1; done
   if [ -z "$ok" ]; then
-    echo "iso: 127.0.0.1:$PORT is served by --user-data-dir=${DIR:-<unknown>}, which is not one of" >&2
+    echo "harness-iso: 127.0.0.1:$PORT is served by --user-data-dir=${DIR:-<unknown>}, which is not one of" >&2
     echo "     $PROFILES — refusing to drive another app's browser." >&2
     echo "     Set BU_ISO_PORT to the harness instance's port, or BU_ISO_PROFILE if this is it." >&2
     exit 1
@@ -49,7 +49,7 @@ fi
 WS=$(curl -fsS --max-time 5 "http://127.0.0.1:$PORT/json/version" \
      | sed -n 's/.*"webSocketDebuggerUrl" *: *"\([^"]*\)".*/\1/p') || true
 if [ -z "$WS" ]; then
-  echo "iso: no isolated Chrome on 127.0.0.1:$PORT — see interaction-skills/isolated-instance.md" >&2
+  echo "harness-iso: no isolated Chrome on 127.0.0.1:$PORT — see interaction-skills/isolated-instance.md" >&2
   exit 1
 fi
 
